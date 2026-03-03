@@ -9,6 +9,7 @@ import com.controlefinanceiro.model.Usuario;
 import com.controlefinanceiro.model.enums.Modalidade;
 import com.controlefinanceiro.model.enums.Periodicidade;
 import com.controlefinanceiro.model.enums.StatusParcela;
+import com.controlefinanceiro.repository.CategoriaRepository;
 import com.controlefinanceiro.repository.FluxoFinanceiroRepository;
 import com.controlefinanceiro.repository.TransacaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,9 @@ public class TransacaoService {
     @Autowired
     private FluxoFinanceiroRepository fluxoRepository;
 
+    @Autowired
+    private CategoriaRepository categoriaRepository;
+
     // O @Transactional garante que se der erro na parcela 5, ele desfaz tudo e não salva nada pela metade no banco
     @Transactional
     public Transacao registrarTransacao(DadosCadastroTransacao dados, Usuario usuarioLogado) {
@@ -44,6 +48,10 @@ public class TransacaoService {
                 .dataRegistro(dados.dataRegistro())
                 .arquivado(false)
                 .build();
+
+        var categoria = categoriaRepository.findById(dados.categoriaId())
+                .orElseThrow(() -> new RuntimeException("Categoria não encontrada"));
+        transacao.setCategoria(categoria); // <-- Seta a categoria na transação antes de salvar!
 
         transacaoRepository.save(transacao);
 
@@ -79,8 +87,6 @@ public class TransacaoService {
         return transacao;
     }
 
-    // Adicione estes métodos dentro do TransacaoService:
-
     public List<Transacao> buscarPorUsuario(String email) {
         return transacaoRepository.findByUsuarioEmailAndArquivadoFalse(email);
     }
@@ -90,8 +96,6 @@ public class TransacaoService {
         return transacaoRepository.buscarPorIdEEmailComParcelas(id, email)
                 .orElseThrow(() -> new RuntimeException("Transação não encontrada ou acesso negado."));
     }
-
-    // Adicione este método dentro do TransacaoService
 
     @Transactional
     public FluxoFinanceiro atualizarStatusParcela(Long idParcela, DadosAtualizacaoParcela dados, String email) {

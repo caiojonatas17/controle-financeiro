@@ -26,17 +26,13 @@ public class AutenticacaoController {
 
     @PostMapping("/login")
     public ResponseEntity efetuarLogin(@RequestBody @Valid DadosAutenticacao dados) {
-        System.out.println("Tentando logar com o email: " + dados.email() + " e senha: " + dados.senha());
-        // Empacota o email e senha que chegaram da requisição
         var authenticationToken = new UsernamePasswordAuthenticationToken(dados.email(), dados.senha());
-
-        // O Spring Security vai lá no banco, busca o usuário pelo e-mail e compara a senha criptografada
         var authentication = manager.authenticate(authenticationToken);
 
-        // Se a senha estiver correta, geramos o token JWT
-        var tokenJWT = tokenService.gerarToken((Usuario) authentication.getPrincipal());
+        var usuarioLogado = (Usuario) authentication.getPrincipal();
+        var tokenJWT = tokenService.gerarToken(usuarioLogado);
 
-        // Devolvemos o token na resposta com o status 200 (OK)
-        return ResponseEntity.ok(new DadosTokenJWT(tokenJWT));
+        // Devolve o token, a role e o nome
+        return ResponseEntity.ok(new DadosTokenJWT(tokenJWT, usuarioLogado.getRole(), usuarioLogado.getNome()));
     }
 }

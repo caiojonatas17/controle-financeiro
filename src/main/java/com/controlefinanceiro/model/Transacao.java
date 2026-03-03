@@ -73,4 +73,8 @@ public class Transacao {
     // Se a transação for apagada, as parcelas também são (orphanRemoval = true)
     @OneToMany(mappedBy = "transacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FluxoFinanceiro> parcelas = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_id")
+    private Categoria categoria;
 }

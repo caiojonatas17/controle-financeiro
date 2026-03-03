@@ -37,6 +37,8 @@ public class SecurityConfigurations {
                 .authorizeHttpRequests(req -> {
                     // Libera acesso público APENAS para a rota de login
                     req.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll();
+                    req.requestMatchers(HttpMethod.POST, "/api/usuarios").hasRole("ADMIN");
+                    req.requestMatchers(HttpMethod.GET, "/api/usuarios").hasRole("ADMIN");
                     // Qualquer outra requisição precisará de autenticação (Token JWT)
                     req.anyRequest().authenticated();
                 })

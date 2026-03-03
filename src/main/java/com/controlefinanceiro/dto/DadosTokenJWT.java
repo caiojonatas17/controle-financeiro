@@ -1,4 +1,6 @@
 package com.controlefinanceiro.dto;
 
-public record DadosTokenJWT(String token) {
+import com.controlefinanceiro.model.enums.Role;
+
+public record DadosTokenJWT(String token, Role role, String nome) {
 }

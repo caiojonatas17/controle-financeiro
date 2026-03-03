@@ -1,5 +1,6 @@
 package com.controlefinanceiro.service;
 
+import com.controlefinanceiro.dto.DadosCategoriaSoma;
 import com.controlefinanceiro.dto.DadosDashboardResumo;
 import com.controlefinanceiro.model.FluxoFinanceiro;
 import com.controlefinanceiro.model.enums.StatusParcela;
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DashboardService {
@@ -43,34 +46,55 @@ public class DashboardService {
         BigDecimal totalReceitas = BigDecimal.ZERO;
         BigDecimal totalDespesas = BigDecimal.ZERO;
 
+        // Agora temos DOIS mapas
+        Map<String, DadosCategoriaSoma> mapaGastos = new HashMap<>();
+        Map<String, DadosCategoriaSoma> mapaReceitas = new HashMap<>();
+
+        // Mapa para ir somando os gastos de cada categoria
+        Map<String, DadosCategoriaSoma> mapaCategorias = new HashMap<>();
         // 5. Separa o que é Gasto do que é Recebimento com filtros de segurança
         for (FluxoFinanceiro fluxo : fluxosDoMes) {
-
             // FILTRO 1: Ignorar se a transação estiver arquivada
-            if (fluxo.getTransacao().getArquivado()) {
-                continue;
-            }
+            if (fluxo.getTransacao().getArquivado()) continue;
+
+            var categoria = fluxo.getTransacao().getCategoria();
 
             // FILTRO 2: Regra para Recebíveis (Só entram se estiverem pagos/recebidos)
-            // "Não interessa a data do pagamento, o que vale é se ela foi recebida"
             if (fluxo.getTransacao().getTipoTransacao() == TipoTransacao.RECEBIVEL) {
                 if (fluxo.getStatus() == StatusParcela.PAGO) {
                     totalReceitas = totalReceitas.add(fluxo.getValorParcela());
+                    // Lógica para somar Receitas por Categoria
+                    if (categoria != null) {
+                        String nomeCat = categoria.getNome();
+                        BigDecimal somaAtual = mapaReceitas.containsKey(nomeCat) ? mapaReceitas.get(nomeCat).total() : BigDecimal.ZERO;
+                        mapaReceitas.put(nomeCat, new DadosCategoriaSoma(nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela())));
+                    }
                 }
-                // Se for PENDENTE, ignoramos na soma das Receitas
             }
-
             // FILTRO 3: Regra para Gastos
-            // Aqui costumamos somar tudo (PAGO ou PENDENTE) para você saber o que deve no mês.
-            // Mas se quiser que o saldo seja apenas o "dinheiro em conta", pode filtrar aqui também.
             else if (fluxo.getTransacao().getTipoTransacao() == TipoTransacao.GASTO) {
                 totalDespesas = totalDespesas.add(fluxo.getValorParcela());
+                // Lógica para somar Gastos por Categoria
+                if (categoria != null) {
+                    String nomeCat = categoria.getNome();
+                    BigDecimal somaAtual = mapaGastos.containsKey(nomeCat) ? mapaGastos.get(nomeCat).total() : BigDecimal.ZERO;
+                    mapaGastos.put(nomeCat, new DadosCategoriaSoma(nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela())));
+                }
             }
         }
 
-// 6. Calcula o saldo líquido real
+        // 6. Calcula o saldo líquido real
         BigDecimal saldo = totalReceitas.subtract(totalDespesas);
 
-        return new DadosDashboardResumo(totalReceitas, totalDespesas, saldo);
+        // Converte o mapa para a lista que o frontend espera
+        List<DadosCategoriaSoma> gastosPorCategoria = mapaCategorias.values().stream().toList();
+
+        return new DadosDashboardResumo(
+                totalReceitas,
+                totalDespesas,
+                saldo,
+                mapaGastos.values().stream().toList(),
+                mapaReceitas.values().stream().toList() // Passamos a segunda lista
+        );
     }
 }

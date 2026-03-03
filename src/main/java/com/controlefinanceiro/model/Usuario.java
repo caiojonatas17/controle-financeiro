@@ -1,5 +1,6 @@
 package com.controlefinanceiro.model;
 
+import com.controlefinanceiro.model.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -48,13 +49,19 @@ public class Usuario implements UserDetails {
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm;
 
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
     // --- MÉTODOS OBRIGATÓRIOS DO SPRING SECURITY (USER DETAILS) ---
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Por enquanto todo mundo tem a role de usuário comum.
-        // Se no futuro você vender a plataforma, podemos criar uma role "ADMIN" para você.
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        // Se a role for nula (usuários antigos), assume USER como padrão de segurança
+        if (this.role == Role.ADMIN) {
+            return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
+        } else {
+            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        }
     }
 
     @Override
