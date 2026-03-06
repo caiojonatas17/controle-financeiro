@@ -4,11 +4,13 @@ import com.controlefinanceiro.dto.*;
 import com.controlefinanceiro.repository.UsuarioRepository;
 import com.controlefinanceiro.service.TransacaoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -41,12 +43,18 @@ public class TransacaoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<DadosListagemTransacao>> listar() {
+    public ResponseEntity<List<DadosListagemTransacao>> listar(
+            @RequestParam() String tipoTransacao,
+            @RequestParam(required = false) Long contaId,
+            @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) String modalidade,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim) {
         // Pega o email do usuário logado pelo Token
         var emailUsuarioLogado = SecurityContextHolder.getContext().getAuthentication().getName();
 
         // Busca apenas as transações ativas (não arquivadas) deste usuário
-        var transacoes = service.buscarPorUsuario(emailUsuarioLogado); // Vamos criar isso no Service!
+        var transacoes = service.buscarPorUsuario(emailUsuarioLogado, tipoTransacao, contaId, categoriaId, modalidade, dataInicio, dataFim); // Vamos criar isso no Service!
 
         // Converte as Entidades para o DTO de listagem
         var listagem = transacoes.stream().map(DadosListagemTransacao::new).toList();
@@ -78,6 +86,7 @@ public class TransacaoController {
         // Retornamos os dados da parcela atualizados para o Vue.js atualizar o ecrã em tempo real
         return ResponseEntity.ok(new DadosParcela(parcelaAtualizada));
     }
+
 
     @PatchMapping("/{id}/arquivar")
     public ResponseEntity<Void> arquivar(@PathVariable Long id) {

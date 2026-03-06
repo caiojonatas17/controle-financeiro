@@ -21,7 +21,7 @@ public record DadosTransacaoCompleta(
 ) {
     public DadosTransacaoCompleta(Transacao transacao) {
         this(transacao.getId(), transacao.getTipoTransacao(), transacao.getTitulo(),
-                transacao.getDescricao(), transacao.getAgente(), transacao.getValorTotal(),
+                transacao.getDescricao(), transacao.getConta() != null ? transacao.getConta().getNome() : "Sem Conta", transacao.getValorTotal(),
                 transacao.getModalidade(), transacao.getDataRegistro(),
                 // Aqui a mágica acontece: convertemos a lista do banco para a lista do DTO
                 transacao.getParcelas().stream().map(DadosParcela::new).toList()

@@ -41,8 +41,9 @@ public class Transacao {
     @Column(columnDefinition = "TEXT")
     private String descricao;
 
-    @Column(length = 100)
-    private String agente;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conta_id")
+    private Conta conta;
 
     // BigDecimal é a classe do Java correta para lidar com dinheiro (evita falhas de arredondamento)
     @Column(name = "valor_total", nullable = false, precision = 15, scale = 2)

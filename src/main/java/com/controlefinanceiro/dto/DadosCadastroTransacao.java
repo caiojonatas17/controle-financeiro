@@ -12,7 +12,7 @@ public record DadosCadastroTransacao(
         TipoTransacao tipoTransacao,
         String titulo,
         String descricao,
-        String agente,
+        Long contaId,
         BigDecimal valorTotal,
         Modalidade modalidade,
         LocalDate dataRegistro,

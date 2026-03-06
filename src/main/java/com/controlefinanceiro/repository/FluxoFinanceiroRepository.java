@@ -27,4 +27,14 @@ public interface FluxoFinanceiroRepository extends JpaRepository<FluxoFinanceiro
     // Garante que a parcela pertence a uma transação do dono do Token
     @Query("SELECT f FROM FluxoFinanceiro f WHERE f.id = :idParcela AND f.transacao.usuario.email = :email")
     Optional<FluxoFinanceiro> buscarPorIdEEmailUsuario(@Param("idParcela") Long idParcela, @Param("email") String email);
+
+    @Query("""
+        SELECT f FROM FluxoFinanceiro f 
+        WHERE f.transacao.usuario.email = :email 
+        AND f.transacao.arquivado = false 
+        AND f.status = 'PENDENTE' 
+        AND f.dataCompetencia <= :hoje 
+        ORDER BY f.dataCompetencia ASC
+    """)
+    List<FluxoFinanceiro> buscarPendentesAteData(String email, LocalDate hoje);
 }

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Configuration
@@ -30,15 +31,15 @@ public class CategoriaSeeder implements CommandLineRunner {
             // Altere a lista para incluir o TipoTransacao em cada uma:
             List<Categoria> categoriasPadrao = List.of(
                     // Categorias de GASTO
-                    new Categoria(null, "Alimentação", "orange", "restaurant", TipoTransacao.GASTO, usuario),
-                    new Categoria(null, "Transporte", "blue", "directions_car", TipoTransacao.GASTO, usuario),
-                    new Categoria(null, "Moradia", "purple", "home", TipoTransacao.GASTO, usuario),
-                    new Categoria(null, "Lazer", "pink", "sports_esports", TipoTransacao.GASTO, usuario),
-                    new Categoria(null, "Saúde", "red", "favorite", TipoTransacao.GASTO, usuario),
+                    new Categoria(null, "Alimentação", "orange", "restaurant", TipoTransacao.GASTO, new BigDecimal("800.00"), usuario),
+                    new Categoria(null, "Transporte", "blue", "directions_car", TipoTransacao.GASTO, new BigDecimal("400.00"), usuario),
+                    new Categoria(null, "Moradia", "purple", "home", TipoTransacao.GASTO, new BigDecimal("1500.00"), usuario),
+                    new Categoria(null, "Lazer", "pink", "sports_esports", TipoTransacao.GASTO, new BigDecimal("300.00"), usuario),
+                    new Categoria(null, "Saúde", "red", "favorite", TipoTransacao.GASTO, new BigDecimal("200.00"), usuario),
 
                     // Categorias de RECEBIVEL
-                    new Categoria(null, "Salário", "positive", "attach_money", TipoTransacao.RECEBIVEL, usuario),
-                    new Categoria(null, "Freelance", "teal", "computer", TipoTransacao.RECEBIVEL, usuario)
+                    new Categoria(null, "Salário", "positive", "attach_money", TipoTransacao.RECEBIVEL, BigDecimal.ZERO, usuario),
+                    new Categoria(null, "Freelance", "teal", "computer", TipoTransacao.RECEBIVEL, BigDecimal.ZERO, usuario)
             );
 
             categoriaRepository.saveAll(categoriasPadrao);

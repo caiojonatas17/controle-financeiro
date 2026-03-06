@@ -2,6 +2,7 @@ package com.controlefinanceiro.service;
 
 import com.controlefinanceiro.dto.DadosCategoriaSoma;
 import com.controlefinanceiro.dto.DadosDashboardResumo;
+import com.controlefinanceiro.dto.DadosNotificacao;
 import com.controlefinanceiro.model.FluxoFinanceiro;
 import com.controlefinanceiro.model.enums.StatusParcela;
 import com.controlefinanceiro.model.enums.TipoTransacao;
@@ -26,16 +27,11 @@ public class DashboardService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    public DadosDashboardResumo obterResumoDoMes(int ano, int mes, String emailUsuario) {
+    public DadosDashboardResumo obterResumoPeriodo(LocalDate dataInicio, LocalDate dataFim, String emailUsuario) {
 
         // 1. Busca o ID do usuário através do email
         var usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
-
-        // 2. Descobre qual é o primeiro e o último dia do mês solicitado
-        YearMonth anoMes = YearMonth.of(ano, mes);
-        LocalDate dataInicio = anoMes.atDay(1); // Ex: 2026-02-01
-        LocalDate dataFim = anoMes.atEndOfMonth(); // Ex: 2026-02-28
 
         // 3. Usa aquele método personalizado que criamos lá no repositório!
         List<FluxoFinanceiro> fluxosDoMes = fluxoRepository.findFluxosPorUsuarioEPeriodo(
@@ -67,7 +63,9 @@ public class DashboardService {
                     if (categoria != null) {
                         String nomeCat = categoria.getNome();
                         BigDecimal somaAtual = mapaReceitas.containsKey(nomeCat) ? mapaReceitas.get(nomeCat).total() : BigDecimal.ZERO;
-                        mapaReceitas.put(nomeCat, new DadosCategoriaSoma(nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela())));
+                        // Pegamos o orçamento da categoria (se for null, joga ZERO por segurança)
+                        BigDecimal limite = categoria.getOrcamento() != null ? categoria.getOrcamento() : BigDecimal.ZERO;
+                        mapaReceitas.put(nomeCat, new DadosCategoriaSoma(nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela()), limite));
                     }
                 }
             }
@@ -78,7 +76,9 @@ public class DashboardService {
                 if (categoria != null) {
                     String nomeCat = categoria.getNome();
                     BigDecimal somaAtual = mapaGastos.containsKey(nomeCat) ? mapaGastos.get(nomeCat).total() : BigDecimal.ZERO;
-                    mapaGastos.put(nomeCat, new DadosCategoriaSoma(nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela())));
+                    // Pegamos o orçamento da categoria (se for null, joga ZERO por segurança)
+                    BigDecimal limite = categoria.getOrcamento() != null ? categoria.getOrcamento() : BigDecimal.ZERO;
+                    mapaGastos.put(nomeCat, new DadosCategoriaSoma(nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela()), limite));
                 }
             }
         }
@@ -96,5 +96,20 @@ public class DashboardService {
                 mapaGastos.values().stream().toList(),
                 mapaReceitas.values().stream().toList() // Passamos a segunda lista
         );
+    }
+
+    public List<DadosNotificacao> obterNotificacoes(String emailUsuario) {
+        LocalDate hoje = LocalDate.now();
+        List<FluxoFinanceiro> pendentes = fluxoRepository.buscarPendentesAteData(emailUsuario, hoje);
+
+        return pendentes.stream()
+                .map(f -> new DadosNotificacao(
+                        f.getId(),
+                        f.getTransacao().getTitulo() + " (Parc. " + f.getNumeroParcela() + ")",
+                        f.getValorParcela(),
+                        f.getDataCompetencia(),
+                        f.getTransacao().getTipoTransacao().name()
+                ))
+                .toList();
     }
 }

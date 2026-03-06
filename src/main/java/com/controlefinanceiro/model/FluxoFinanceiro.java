@@ -40,4 +40,7 @@ public class FluxoFinanceiro {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatusParcela status = StatusParcela.PENDENTE;
+
+    @Column(name = "valor_pago")
+    private BigDecimal valorPago;
 }

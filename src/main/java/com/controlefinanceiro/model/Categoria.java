@@ -4,6 +4,8 @@ import com.controlefinanceiro.model.enums.TipoTransacao;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "categorias")
 @Getter
@@ -24,8 +26,12 @@ public class Categoria {
     @Enumerated(EnumType.STRING)
     private TipoTransacao tipoTransacao; // Diz se essa categoria é de GASTO ou RECEBIVEL
 
+    @Column(name = "orcamento")
+    private BigDecimal orcamento;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
+
 
 }

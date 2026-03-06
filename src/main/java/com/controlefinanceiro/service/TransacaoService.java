@@ -3,6 +3,7 @@ package com.controlefinanceiro.service;
 import com.controlefinanceiro.dto.DadosAtualizacaoParcela;
 import com.controlefinanceiro.dto.DadosCadastroTransacao;
 import com.controlefinanceiro.dto.DadosListagemTransacao;
+import com.controlefinanceiro.model.Conta;
 import com.controlefinanceiro.model.FluxoFinanceiro;
 import com.controlefinanceiro.model.Transacao;
 import com.controlefinanceiro.model.Usuario;
@@ -10,6 +11,7 @@ import com.controlefinanceiro.model.enums.Modalidade;
 import com.controlefinanceiro.model.enums.Periodicidade;
 import com.controlefinanceiro.model.enums.StatusParcela;
 import com.controlefinanceiro.repository.CategoriaRepository;
+import com.controlefinanceiro.repository.ContaRepository;
 import com.controlefinanceiro.repository.FluxoFinanceiroRepository;
 import com.controlefinanceiro.repository.TransacaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,16 +35,22 @@ public class TransacaoService {
     @Autowired
     private CategoriaRepository categoriaRepository;
 
+    @Autowired
+    private ContaRepository contaRepository;
+
     // O @Transactional garante que se der erro na parcela 5, ele desfaz tudo e não salva nada pela metade no banco
     @Transactional
     public Transacao registrarTransacao(DadosCadastroTransacao dados, Usuario usuarioLogado) {
+        // Busca a conta no banco de dados pelo ID recebido do front
+        Conta conta = contaRepository.findById(dados.contaId())
+                .orElseThrow(() -> new RuntimeException("Conta não encontrada!"));
 
         var transacao = Transacao.builder()
                 .usuario(usuarioLogado)
                 .tipoTransacao(dados.tipoTransacao())
                 .titulo(dados.titulo())
                 .descricao(dados.descricao())
-                .agente(dados.agente())
+                .conta(conta)
                 .valorTotal(dados.valorTotal())
                 .modalidade(dados.modalidade())
                 .dataRegistro(dados.dataRegistro())
@@ -58,7 +66,23 @@ public class TransacaoService {
         int parcelas = (dados.modalidade() == Modalidade.A_VISTA || dados.quantidadeParcelas() == null)
                 ? 1 : dados.quantidadeParcelas();
 
-        BigDecimal valorParcela = dados.valorTotal().divide(new BigDecimal(parcelas), 2, java.math.RoundingMode.HALF_UP);
+        // Se for assinatura (Netflix, etc), pré-geramos 12 meses para aparecerem nos relatórios
+        if (dados.modalidade() == Modalidade.RECORRENTE) {
+            parcelas = 12; // Pré-gera 1 ano de mensalidades
+        }
+
+        BigDecimal valorParcela;
+
+        if (dados.modalidade() == Modalidade.RECORRENTE) {
+            // Se for assinatura, o valor de CADA parcela é exatamente o valor preenchido na tela
+            valorParcela = dados.valorTotal();
+        } else if (dados.modalidade() == Modalidade.PARCELADO) {
+            // Se for parcelado, aí sim fazemos a divisão normal
+            valorParcela = dados.valorTotal().divide(new BigDecimal(parcelas), 2, java.math.RoundingMode.HALF_UP);
+        } else {
+            // À vista
+            valorParcela = dados.valorTotal();
+        }
 
         // Se o frontend não enviar a periodicidade, assumimos MENSAL por padrão
         Periodicidade periodo = dados.periodicidade() != null ? dados.periodicidade() : Periodicidade.MENSAL;
@@ -87,8 +111,16 @@ public class TransacaoService {
         return transacao;
     }
 
-    public List<Transacao> buscarPorUsuario(String email) {
-        return transacaoRepository.findByUsuarioEmailAndArquivadoFalse(email);
+    public List<Transacao> buscarPorUsuario(String email,
+                                            String tipoTransacao,
+                                            Long contaId,
+                                            Long categoriaId,
+                                            String modalidade,
+                                            LocalDate dataInicio,
+                                            LocalDate dataFim) {
+        if (tipoTransacao.equals("RECEBIVEL"))
+            return transacaoRepository.pesquisarRecebivel(email, contaId, categoriaId, modalidade, dataInicio, dataFim);
+        return transacaoRepository.pesquisarGastos(email, contaId, categoriaId, modalidade, dataInicio, dataFim);
     }
 
     public Transacao buscarDetalhes(Long id, String email) {
@@ -105,15 +137,16 @@ public class TransacaoService {
 
         // 2. Lógica de atualização
         if (dados.pago() != null && dados.pago()) {
-            parcela.setStatus(com.controlefinanceiro.model.enums.StatusParcela.PAGO);
+            parcela.setStatus(StatusParcela.PAGO);
             // Se o frontend não mandar a data, assumimos a data de hoje
-            parcela.setDataPagamentoEfetivo(dados.dataPagamentoEfetivo() != null ? dados.dataPagamentoEfetivo() : java.time.LocalDate.now());
+            parcela.setDataPagamentoEfetivo(dados.dataPagamentoEfetivo() != null ? dados.dataPagamentoEfetivo() : LocalDate.now());
+            parcela.setValorPago(dados.valorPago() != null ? dados.valorPago() : parcela.getValorParcela());
         } else {
             // Permite "desfazer" um pagamento, voltando a parcela para PENDENTE
-            parcela.setStatus(com.controlefinanceiro.model.enums.StatusParcela.PENDENTE);
+            parcela.setStatus(StatusParcela.PENDENTE);
             parcela.setDataPagamentoEfetivo(null);
+            parcela.setValorPago(null);
         }
-
         return parcela; // Como estamos usando @Transactional, o Hibernate salva a alteração automaticamente no fim do método!
     }
 

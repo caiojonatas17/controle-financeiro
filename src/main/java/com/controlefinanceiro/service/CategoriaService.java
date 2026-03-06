@@ -40,6 +40,7 @@ public class CategoriaService {
         categoria.setCor(dados.cor());
         categoria.setIcone(dados.icone());
         categoria.setUsuario(usuario);
+        categoria.setTipoTransacao(dados.tipoTransacao());
 
         repository.save(categoria);
 

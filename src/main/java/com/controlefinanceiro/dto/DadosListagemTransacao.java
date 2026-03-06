@@ -11,15 +11,20 @@ public record DadosListagemTransacao(
         Long id,
         TipoTransacao tipoTransacao,
         String titulo,
+        String descricao,
         String agente,
         BigDecimal valorTotal,
         Modalidade modalidade,
         LocalDate dataRegistro,
-        Boolean arquivado
+        Boolean arquivado,
+        DadosCategoria categoria
 ) {
+
+
     public DadosListagemTransacao(Transacao transacao) {
         this(transacao.getId(), transacao.getTipoTransacao(), transacao.getTitulo(),
-                transacao.getAgente(), transacao.getValorTotal(), transacao.getModalidade(),
-                transacao.getDataRegistro(), transacao.getArquivado());
+                transacao.getDescricao(), transacao.getConta() != null ? transacao.getConta().getNome() : "Sem Conta", transacao.getValorTotal(),
+                transacao.getModalidade(), transacao.getDataRegistro(), transacao.getArquivado(),
+                transacao.getCategoria() != null ? new DadosCategoria(transacao.getCategoria()) : null);
     }
 }
