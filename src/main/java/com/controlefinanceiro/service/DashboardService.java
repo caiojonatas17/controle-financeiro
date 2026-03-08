@@ -65,7 +65,7 @@ public class DashboardService {
                         BigDecimal somaAtual = mapaReceitas.containsKey(nomeCat) ? mapaReceitas.get(nomeCat).total() : BigDecimal.ZERO;
                         // Pegamos o orçamento da categoria (se for null, joga ZERO por segurança)
                         BigDecimal limite = categoria.getOrcamento() != null ? categoria.getOrcamento() : BigDecimal.ZERO;
-                        mapaReceitas.put(nomeCat, new DadosCategoriaSoma(nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela()), limite));
+                        mapaReceitas.put(nomeCat, new DadosCategoriaSoma(categoria.getId(), nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela()), limite));
                     }
                 }
             }
@@ -78,7 +78,7 @@ public class DashboardService {
                     BigDecimal somaAtual = mapaGastos.containsKey(nomeCat) ? mapaGastos.get(nomeCat).total() : BigDecimal.ZERO;
                     // Pegamos o orçamento da categoria (se for null, joga ZERO por segurança)
                     BigDecimal limite = categoria.getOrcamento() != null ? categoria.getOrcamento() : BigDecimal.ZERO;
-                    mapaGastos.put(nomeCat, new DadosCategoriaSoma(nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela()), limite));
+                    mapaGastos.put(nomeCat, new DadosCategoriaSoma(categoria.getId(), nomeCat, categoria.getCor(), somaAtual.add(fluxo.getValorParcela()), limite));
                 }
             }
         }

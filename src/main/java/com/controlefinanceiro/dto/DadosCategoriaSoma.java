@@ -3,6 +3,7 @@ package com.controlefinanceiro.dto;
 import java.math.BigDecimal;
 
 public record DadosCategoriaSoma(
+        Long id,
         String nome,
         String cor,
         BigDecimal total,

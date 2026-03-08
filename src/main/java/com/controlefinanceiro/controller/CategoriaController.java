@@ -1,6 +1,7 @@
 package com.controlefinanceiro.controller;
 
 import com.controlefinanceiro.dto.DadosCategoria;
+import com.controlefinanceiro.dto.DadosOrcamentoCategoria;
 import com.controlefinanceiro.model.enums.TipoTransacao;
 import com.controlefinanceiro.service.CategoriaService;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoriaController {
 
-    private final CategoriaService service;
+    private final CategoriaService categoriaService;
 
 //    @GetMapping
 //    public ResponseEntity<List<DadosCategoria>> listar() {
@@ -26,13 +27,25 @@ public class CategoriaController {
     @GetMapping
     public ResponseEntity<List<DadosCategoria>> listar(@RequestParam(required = false) TipoTransacao tipo) {
         var emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(service.listar(emailLogado, tipo));
+        return ResponseEntity.ok(categoriaService.listar(emailLogado, tipo));
     }
 
     @PostMapping
     public ResponseEntity<DadosCategoria> criar(@RequestBody DadosCategoria dados) {
         var emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
-        var categoriaCriada = service.criar(dados, emailLogado);
+        var categoriaCriada = categoriaService.criar(dados, emailLogado);
         return ResponseEntity.ok(categoriaCriada);
+    }
+
+    @PatchMapping("/{id}/orcamento")
+    public ResponseEntity<?> atualizarOrcamento(
+            @PathVariable Long id,
+            @RequestBody DadosOrcamentoCategoria dados) {
+
+        var emailLogado = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        categoriaService.atualizarOrcamento(id, dados.orcamento(), emailLogado);
+
+        return ResponseEntity.ok().build();
     }
 }

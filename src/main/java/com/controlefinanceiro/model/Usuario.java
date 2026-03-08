@@ -11,7 +11,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "usuarios")
@@ -49,19 +52,32 @@ public class Usuario implements UserDetails {
     @Column(name = "atualizado_em")
     private LocalDateTime atualizadoEm;
 
+    @Column(name = "codigo_recuperacao")
+    private String codigoRecuperacao;
+
+    @Column(name = "validade_codigo")
+    private LocalDateTime validadeCodigo;
+
+    // 1. O Vínculo: Se for nulo, este utilizador é o dono. Se tiver ID, é um colaborador.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dono_conta_id")
+    private Usuario donoDaConta;
+
+    // 2. Múltiplos Papéis: Transformamos o Role único numa lista/set de Roles
+    @ElementCollection(fetch = FetchType.EAGER) // EAGER para o Spring Security carregar logo as permissões
+    @CollectionTable(name = "usuario_roles", joinColumns = @JoinColumn(name = "usuario_id"))
     @Enumerated(EnumType.STRING)
-    private Role role;
+    @Column(name = "role", length = 50)
+    private Set<Role> roles = new HashSet<>();
 
     // --- MÉTODOS OBRIGATÓRIOS DO SPRING SECURITY (USER DETAILS) ---
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Se a role for nula (usuários antigos), assume USER como padrão de segurança
-        if (this.role == Role.ADMIN) {
-            return List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"));
-        } else {
-            return List.of(new SimpleGrantedAuthority("ROLE_USER"));
-        }
+        // Pega todos os papéis do utilizador (ex: USER, COLABORADOR_LEITURA) e transforma em Authorities
+        return this.roles.stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
+                .collect(Collectors.toList());
     }
 
     @Override
