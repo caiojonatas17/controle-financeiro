@@ -41,6 +41,7 @@ public class SecurityConfigurations {
                     req.requestMatchers(HttpMethod.POST, "/api/auth/redefinir-senha").permitAll();
                     req.requestMatchers(HttpMethod.POST, "/api/usuarios").hasRole("ADMIN");
                     req.requestMatchers(HttpMethod.GET, "/api/usuarios").hasRole("ADMIN");
+                    req.requestMatchers(HttpMethod.POST, "/api/hotmart/webhook").permitAll();
                     // Qualquer outra requisição precisará de autenticação (Token JWT)
                     req.anyRequest().authenticated();
                 })
